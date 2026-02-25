@@ -1,0 +1,17 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+backend/db.sqlite3
+backend/.env
+backend/.pytest_cache/
+
+# JavaScript / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
