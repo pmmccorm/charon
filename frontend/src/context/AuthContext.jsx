@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
@@ -80,7 +81,7 @@ export function AuthProvider({ children }) {
             if (!isCancelled) {
               await fetchCurrentUser(refreshedAccessToken);
             }
-          } catch (refreshError) {
+          } catch {
             if (!isCancelled) {
               clearSession();
             }
