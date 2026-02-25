@@ -107,3 +107,27 @@ npm install
 cp .env.example .env
 npm run dev
 ```
+
+## Docker
+
+Build the container image from the repository root:
+
+```bash
+docker build -t resume-charon .
+```
+
+Run both services from one container:
+
+```bash
+docker run --rm -p 8000:8000 -p 5173:5173 \
+  -e CORS_ALLOWED_ORIGINS=http://localhost:5173 \
+  -e CSRF_TRUSTED_ORIGINS=http://localhost:5173 \
+  -e ALLOWED_HOSTS=localhost,127.0.0.1 \
+  -e STRIPE_SECRET_KEY=sk_test_xxx \
+  resume-charon
+```
+
+The container runs:
+
+- Django backend at `http://localhost:8000`
+- Vite preview frontend at `http://localhost:5173`
