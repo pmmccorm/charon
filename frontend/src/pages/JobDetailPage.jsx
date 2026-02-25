@@ -64,9 +64,10 @@ export default function JobDetailPage() {
     setStatusMessage("");
 
     const obolAmount = Number(applicationForm.obol_amount);
+    const shouldUseStripe = obolAmount > 0 && !user?.paper_money_enabled;
 
     try {
-      if (obolAmount > 0) {
+      if (shouldUseStripe) {
         const paymentResponse = await authenticatedRequest("/payments/application-session/", {
           method: "POST",
           data: {
@@ -100,7 +101,11 @@ export default function JobDetailPage() {
           obol_amount: obolAmount,
         },
       });
-      setStatusMessage("Application submitted successfully.");
+      setStatusMessage(
+        user?.paper_money_enabled && obolAmount > 0
+          ? "Application submitted successfully with simulated obol credits."
+          : "Application submitted successfully.",
+      );
       setApplicationForm({ resume_text: "", notes: "", obol_amount: "0" });
       await loadDetails();
     } catch (submitError) {
@@ -191,6 +196,12 @@ export default function JobDetailPage() {
           <h2>Apply</h2>
           {canApply ? (
             <form className="form-grid" onSubmit={handleApplicationSubmit}>
+              {user?.paper_money_enabled && (
+                <p className="muted">
+                  Paper money mode is enabled for your account, so obols are simulated and no
+                  Stripe checkout is required.
+                </p>
+              )}
               <label>
                 Resume text
                 <textarea

@@ -11,6 +11,7 @@ const initialRegisterState = {
   first_name: "",
   last_name: "",
   role: "job_seeker",
+  paper_money_enabled: false,
 };
 
 export default function AuthPage() {
@@ -52,6 +53,7 @@ export default function AuthPage() {
         first_name: registerForm.first_name,
         last_name: registerForm.last_name,
         role: registerForm.role,
+        paper_money_enabled: registerForm.paper_money_enabled,
       });
       navigate("/jobs", { replace: true });
     } catch (registerError) {
@@ -166,6 +168,19 @@ export default function AuthPage() {
                 <option value="job_seeker">Job seeker</option>
                 <option value="employer">Employer</option>
               </select>
+            </label>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={registerForm.paper_money_enabled}
+                onChange={(event) =>
+                  setRegisterForm((current) => ({
+                    ...current,
+                    paper_money_enabled: event.target.checked,
+                  }))
+                }
+              />
+              Use paper money (simulate fees and obols without Stripe)
             </label>
             <label>
               Password

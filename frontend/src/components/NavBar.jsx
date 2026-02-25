@@ -24,6 +24,7 @@ export default function NavBar() {
           )}
           <span className="user-pill">
             {user.username} ({user.role})
+            {user.paper_money_enabled ? " - paper money" : ""}
           </span>
           <button type="button" className="secondary-button" onClick={logout}>
             Logout

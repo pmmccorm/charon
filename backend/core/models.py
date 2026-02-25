@@ -13,6 +13,7 @@ class User(AbstractUser):
     ROLE_CHOICES = ((EMPLOYER, "Employer"), (JOB_SEEKER, "Job seeker"))
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=JOB_SEEKER)
+    paper_money_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.username} ({self.role})"

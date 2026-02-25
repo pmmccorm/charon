@@ -85,3 +85,97 @@ class CoreApiFlowTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+@override_settings(JOB_POSTING_FEE_CENTS=9900)
+class PaperMoneyFlowTests(APITestCase):
+    employer_password = "EmployerPass123!"
+    paper_seeker_password = "PaperSeekerPass123!"
+    regular_seeker_password = "RegularSeekerPass123!"
+
+    def setUp(self):
+        self.paper_employer = User.objects.create_user(
+            username="paperemployer",
+            password=self.employer_password,
+            role=User.EMPLOYER,
+            email="paperemployer@example.com",
+            paper_money_enabled=True,
+        )
+        self.paper_job_seeker = User.objects.create_user(
+            username="paperjobseeker",
+            password=self.paper_seeker_password,
+            role=User.JOB_SEEKER,
+            email="paperjobseeker@example.com",
+            paper_money_enabled=True,
+        )
+        self.regular_job_seeker = User.objects.create_user(
+            username="regularjobseeker",
+            password=self.regular_seeker_password,
+            role=User.JOB_SEEKER,
+            email="regularjobseeker@example.com",
+            paper_money_enabled=False,
+        )
+
+    def authenticate(self, username, password):
+        token_response = self.client.post(
+            "/api/auth/token/",
+            {"username": username, "password": password},
+            format="json",
+        )
+        self.assertEqual(token_response.status_code, status.HTTP_200_OK)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token_response.data['access']}")
+
+    def create_job_as_paper_employer(self):
+        self.authenticate(self.paper_employer.username, self.employer_password)
+        response = self.client.post(
+            "/api/jobs/",
+            {
+                "title": "Paper Money Engineer",
+                "description": "Payments are simulated for this posting.",
+                "location": "Remote",
+                "duration_days": 30,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        return response
+
+    def test_paper_money_employer_can_skip_stripe_for_listing_fee(self):
+        create_job_response = self.create_job_as_paper_employer()
+        self.assertTrue(create_job_response.data["fee_paid"])
+        self.assertEqual(create_job_response.data["status"], "active")
+        self.assertEqual(create_job_response.data["fee_cents"], 9900)
+
+    def test_paper_money_job_seeker_can_submit_paid_obol_without_payment_session(self):
+        create_job_response = self.create_job_as_paper_employer()
+        job_id = create_job_response.data["id"]
+
+        self.authenticate(self.paper_job_seeker.username, self.paper_seeker_password)
+        apply_response = self.client.post(
+            f"/api/jobs/{job_id}/apply/",
+            {
+                "resume_text": "Paper money candidate resume.",
+                "notes": "Applying with a simulated paid obol.",
+                "obol_amount": 5,
+            },
+            format="json",
+        )
+        self.assertEqual(apply_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(apply_response.data["obol_amount"], 5)
+
+    def test_non_paper_job_seeker_still_requires_paid_session_for_paid_obol(self):
+        create_job_response = self.create_job_as_paper_employer()
+        job_id = create_job_response.data["id"]
+
+        self.authenticate(self.regular_job_seeker.username, self.regular_seeker_password)
+        apply_response = self.client.post(
+            f"/api/jobs/{job_id}/apply/",
+            {
+                "resume_text": "Regular candidate resume.",
+                "notes": "Trying to pay without Stripe.",
+                "obol_amount": 3,
+            },
+            format="json",
+        )
+        self.assertEqual(apply_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("payment_session_id", str(apply_response.data))

@@ -210,6 +210,19 @@ class JobPostingPaymentSessionCreateView(APIView):
         if job.employer_id != request.user.id:
             raise PermissionDenied("You can only pay for your own job postings.")
 
+        if request.user.paper_money_enabled:
+            if not job.fee_paid or job.status != JobPosting.ACTIVE:
+                job.fee_paid = True
+                job.status = JobPosting.ACTIVE
+                job.save(update_fields=["fee_paid", "status", "updated_at"])
+            return Response(
+                {
+                    "message": "Paper money mode enabled. No Stripe checkout required.",
+                    "payment_required": False,
+                    "job_id": job.id,
+                }
+            )
+
         if job.fee_paid or job.fee_cents == 0:
             if not job.fee_paid:
                 job.fee_paid = True
@@ -267,6 +280,16 @@ class ApplicationPaymentSessionCreateView(APIView):
             raise serializers.ValidationError("This job is not currently accepting applications.")
         if job.employer_id == request.user.id:
             raise serializers.ValidationError("You cannot apply to your own job posting.")
+
+        if request.user.paper_money_enabled:
+            return Response(
+                {
+                    "message": "Paper money mode enabled. Submit the application directly.",
+                    "payment_required": False,
+                    "job_id": job.id,
+                    "obol_amount": obol_amount,
+                }
+            )
 
         amount_cents = obol_amount * 100
         stripe_session = _create_checkout_session(

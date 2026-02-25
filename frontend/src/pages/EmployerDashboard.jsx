@@ -68,11 +68,16 @@ export default function EmployerDashboard() {
 
       setJobForm(initialJobForm);
 
-      if (!job.fee_paid && job.fee_cents > 0) {
+      if (!job.fee_paid && job.fee_cents > 0 && !user?.paper_money_enabled) {
         const paymentResponse = await authenticatedRequest("/payments/job-session/", {
           method: "POST",
           data: { job_id: job.id },
         });
+        if (!paymentResponse.payment_required) {
+          setStatusMessage("Job created and activated with simulated paper money.");
+          await loadJobs();
+          return;
+        }
         window.localStorage.setItem(
           PENDING_PAYMENT_KEY,
           JSON.stringify({
@@ -84,7 +89,11 @@ export default function EmployerDashboard() {
         return;
       }
 
-      setStatusMessage("Job created and activated.");
+      setStatusMessage(
+        user?.paper_money_enabled
+          ? "Job created and activated with simulated paper money."
+          : "Job created and activated.",
+      );
       await loadJobs();
     } catch (createError) {
       setError(createError.message);
@@ -119,6 +128,12 @@ export default function EmployerDashboard() {
         <p className="muted">
           Post a role, pay the fixed listing fee, and review anonymized application demand.
         </p>
+        {user?.paper_money_enabled && (
+          <p className="muted">
+            Paper money mode is enabled for your account. Posting fees are simulated without
+            Stripe checkout.
+          </p>
+        )}
       </div>
 
       {error && <p className="error-banner">{error}</p>}

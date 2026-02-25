@@ -56,14 +56,17 @@ The project is now scaffolded as a full-stack web app with:
   - `POST /api/auth/token/`
   - `POST /api/auth/token/refresh/`
   - `GET /api/auth/me/`
+  - Registration supports `paper_money_enabled` to simulate payments
 - Employer workflows:
   - Create job postings with duration and fixed listing fee
+  - If `paper_money_enabled=true`, listing fee is simulated and posting is activated immediately
   - Create Stripe checkout session for posting fee
   - Confirm Stripe session and activate posting
   - View applicants for owned postings
 - Job seeker workflows:
   - Search/list active jobs
   - Apply with resume text + notes + obol amount (`$0`, `$1`, `$3`, `$5`)
+  - If `paper_money_enabled=true`, paid obols are simulated with no Stripe checkout
   - For paid obols, use Stripe checkout + payment confirmation before submit
 - Shared anonymized metrics per job:
   - Total applications
@@ -73,6 +76,7 @@ The project is now scaffolded as a full-stack web app with:
 ### Frontend functionality
 
 - Authentication (login/register)
+- Register with optional **paper money mode** to bypass Stripe and simulate fees/obols
 - Job listing + keyword search
 - Job detail page with:
   - Description and posting metadata

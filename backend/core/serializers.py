@@ -17,6 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "role",
+            "paper_money_enabled",
         )
 
 
@@ -32,6 +33,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "role",
+            "paper_money_enabled",
         )
 
     def create(self, validated_data):
@@ -75,12 +77,14 @@ class JobPostingCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         duration_days = validated_data.pop("duration_days", 30)
+        request_user = self.context["request"].user
         fee_cents = settings.JOB_POSTING_FEE_CENTS
+        fee_paid = fee_cents == 0 or request_user.paper_money_enabled
         return JobPosting.objects.create(
-            employer=self.context["request"].user,
+            employer=request_user,
             fee_cents=fee_cents,
-            fee_paid=fee_cents == 0,
-            status=JobPosting.ACTIVE if fee_cents == 0 else JobPosting.DRAFT,
+            fee_paid=fee_paid,
+            status=JobPosting.ACTIVE if fee_paid else JobPosting.DRAFT,
             expires_at=timezone.now() + timedelta(days=duration_days),
             **validated_data,
         )
@@ -133,7 +137,7 @@ class ApplicationCreateSerializer(serializers.Serializer):
         if Application.objects.filter(job=job, applicant=request.user).exists():
             raise serializers.ValidationError("You have already applied to this job.")
 
-        if obol_amount > 0:
+        if obol_amount > 0 and not request.user.paper_money_enabled:
             payment_session_id = attrs.get("payment_session_id")
             if not payment_session_id:
                 raise serializers.ValidationError(

@@ -6,8 +6,10 @@ from .models import Application, JobPosting, PaymentSession, User
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    fieldsets = UserAdmin.fieldsets + (("Role", {"fields": ("role",)}),)
-    list_display = ("username", "email", "role", "is_staff")
+    fieldsets = UserAdmin.fieldsets + (
+        ("Role", {"fields": ("role", "paper_money_enabled")}),
+    )
+    list_display = ("username", "email", "role", "paper_money_enabled", "is_staff")
 
 
 @admin.register(JobPosting)
