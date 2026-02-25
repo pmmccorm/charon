@@ -41,3 +41,93 @@ The site is built using the following technologies:
 5. Payment: Stripe API
 
 For simplicity everything is on the same server.
+
+## Current implementation in this repository
+
+The project is now scaffolded as a full-stack web app with:
+
+- `backend/` (Django + DRF + JWT + Stripe + sqlite)
+- `frontend/` (React + Vite + React Router + Recharts)
+
+### Backend functionality
+
+- JWT authentication endpoints:
+  - `POST /api/auth/register/`
+  - `POST /api/auth/token/`
+  - `POST /api/auth/token/refresh/`
+  - `GET /api/auth/me/`
+- Employer workflows:
+  - Create job postings with duration and fixed listing fee
+  - Create Stripe checkout session for posting fee
+  - Confirm Stripe session and activate posting
+  - View applicants for owned postings
+- Job seeker workflows:
+  - Search/list active jobs
+  - Apply with resume text + notes + obol amount (`$0`, `$1`, `$3`, `$5`)
+  - For paid obols, use Stripe checkout + payment confirmation before submit
+- Shared anonymized metrics per job:
+  - Total applications
+  - Obol distribution
+  - Applications-over-time data points
+
+### Frontend functionality
+
+- Authentication (login/register)
+- Job listing + keyword search
+- Job detail page with:
+  - Description and posting metadata
+  - Obol distribution chart
+  - Applications-over-time line chart
+  - Application form for job seekers
+- Employer dashboard:
+  - Create postings
+  - Trigger Stripe payment for posting fee
+  - View applicants and resumes
+- Stripe return routes:
+  - `/payments/success`
+  - `/payments/cancel`
+
+## Local development
+
+### Backend
+
+```bash
+cd backend
+python3 -m pip install --user -r requirements.txt
+cp .env.example .env
+python3 manage.py migrate
+python3 manage.py runserver
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+## Docker
+
+Build the container image from the repository root:
+
+```bash
+docker build -t resume-charon .
+```
+
+Run both services from one container:
+
+```bash
+docker run --rm -p 8000:8000 -p 5173:5173 \
+  -e CORS_ALLOWED_ORIGINS=http://localhost:5173 \
+  -e CSRF_TRUSTED_ORIGINS=http://localhost:5173 \
+  -e ALLOWED_HOSTS=localhost,127.0.0.1 \
+  -e STRIPE_SECRET_KEY=sk_test_xxx \
+  resume-charon
+```
+
+The container runs:
+
+- Django backend at `http://localhost:8000`
+- Vite preview frontend at `http://localhost:5173`
