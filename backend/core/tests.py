@@ -85,3 +85,27 @@ class CoreApiFlowTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @override_settings(STRIPE_SECRET_KEY="sk_test_dummy", STRIPE_SUCCESS_URL="http://example.com/success", STRIPE_CANCEL_URL="http://example.com/cancel")
+    def test_application_payment_session_rejects_non_numeric_obol_amount(self):
+        self.authenticate(self.employer.username, self.employer_password)
+        create_job_response = self.client.post(
+            "/api/jobs/",
+            {
+                "title": "Backend Engineer",
+                "description": "Build robust APIs.",
+                "location": "Remote",
+                "duration_days": 30,
+            },
+            format="json",
+        )
+        self.assertEqual(create_job_response.status_code, status.HTTP_201_CREATED)
+        job_id = create_job_response.data["id"]
+
+        self.authenticate(self.job_seeker.username, self.seeker_password)
+        response = self.client.post(
+            "/api/payments/application-session/",
+            {"job_id": job_id, "obol_amount": "not-a-number"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
