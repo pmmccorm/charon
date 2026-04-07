@@ -254,7 +254,13 @@ class ApplicationPaymentSessionCreateView(APIView):
 
     def post(self, request):
         job_id = request.data.get("job_id")
-        obol_amount = int(request.data.get("obol_amount", 0))
+        obol_amount_raw = request.data.get("obol_amount", 0)
+        try:
+            obol_amount = int(obol_amount_raw)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError(
+                "obol_amount must be one of 1, 3, or 5 for paid sessions."
+            )
         if not job_id:
             raise serializers.ValidationError("job_id is required.")
         if obol_amount not in (1, 3, 5):
